@@ -27,7 +27,7 @@ nano .env
 POSTGRES_HOST=database
 POSTGRES_PORT=5432
 POSTGRES_USER=english_bot_user
-POSTGRES_PASSWORD=Test123!Local          # Для тестов, на проде сделай сложнее
+POSTGRES_PASSWORD=Test123!Local          # Для тестов, на проде сделать сложнее
 POSTGRES_DB=english_bot_db
 
 # Telegram бот (получить у @BotFather)
@@ -109,70 +109,3 @@ telegram_english_bot/
 ├── .env.example           # Пример настроек окружения
 └── README.md              # Этот файл
 ```
-
----
-
-## 6. Типичные проблемы и решения
-
-### Бот в состоянии Restarting
-
-```bash
-docker compose logs application
-```
-
-Проверь:
-- Корректный ли `TELEGRAM_TOKEN`
-- Заполнен ли `AI_TOKEN`
-- Нет ли ошибок подключения к базе
-
-Если что-то правил:
-```bash
-docker compose down
-docker compose up --build -d
-```
-
-### База данных падает
-
-```bash
-docker compose logs database
-```
-
-Проверь:
-- Что образ Postgres — `postgres:16`
-- Что `POSTGRES_PASSWORD` в `.env` не пустой
-
----
-
-## 7. Локальная разработка без Docker (опционально)
-
-```bash
-# Установить зависимости
-poetry install
-
-# Поднять локальный PostgreSQL в Docker
-docker run -d   -p 5432:5432   -e POSTGRES_USER=english_bot_user   -e POSTGRES_PASSWORD=Test123!Local   -e POSTGRES_DB=english_bot_db   postgres:16
-
-# В .env для локалки:
-# POSTGRES_HOST=localhost
-
-# Миграции
-poetry run alembic upgrade head
-
-# Сиды
-poetry run python ./app/cli/seed.py
-
-# Запуск бота
-poetry run python ./app/bootstrap.py
-```
-
----
-
-## 8. Безопасность
-
-- Не коммить `.env` в репозиторий
-- На проде используй сложный пароль вместо `Test123!Local`
-- Не публикуй токены бота и GigaChat
-
----
-
-Made with ❤️
