@@ -5,6 +5,7 @@ services:
   application:
     build: .
     restart: always
+    env_file: .env
     volumes:
       - ./app/:/app/app
       - ./.env:/app/.env
