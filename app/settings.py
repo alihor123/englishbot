@@ -13,7 +13,7 @@ class AiSettings(BaseSettings):
 
     token: str
     secure: bool = Field(False)
-    model: str = Field("GigaChat-2-Pro")
+    model: str = Field("GigaChat-Max")
 
     model_config = SettingsConfigDict(
         env_file=ENV_PATH, env_prefix="AI_", extra="ignore"

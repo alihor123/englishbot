@@ -21,26 +21,70 @@ class TaskService:
         """
         Получение упражнения
         """
-
         task_example = await self.task_example_repository.get_by(
             topic_id=task_create_schema.topic.id,
             task_type_id=task_create_schema.task_type.id,
         )
+
         if not task_example:
             raise ModelNotFoundError(model="Пример задачи")
 
         task = await self.ai_service.promt(
-            [
+            messages=[
                 SystemMessageSchema(
-                    content="Ты учитель английского языка, который создает упражнения"
+                    content="""Ты учитель английского языка A1-A2. Создаешь грамматически ИДЕАЛЬНЫЕ упражнения.
+
+🔴 ГЛАВНОЕ ПРАВИЛО - СОГЛАСОВАНИЕ ПОДЛЕЖАЩЕГО И ГЛАГОЛА:
+
+I/You/We/They → базовая форма глагола (БЕЗ -s)
+- I play, You watch, We have, They do
+
+He/She/It → форма с окончанием -s/-es
+- He plays, She watches, It has, He does
+
+🔴 ОКОНЧАНИЯ ГЛАГОЛОВ (для He/She/It):
+- Обычные: play → plays, work → works
+- После -s, -sh, -ch, -x, -o: watch → watches, go → goes, do → does
+- Согласная + y: study → studies
+
+🔴 ФОРМЫ TO BE:
+- I am
+- He/She/It is
+- You/We/They are
+
+🔴 ФОРМЫ TO HAVE:
+- I/You/We/They have
+- He/She/It has
+
+🔴 ПРИ СОЗДАНИИ ВАРИАНТОВ ОТВЕТА:
+1. Смотри на подлежащее в КАЖДОМ предложении
+2. Подбирай форму глагола под КОНКРЕТНОЕ подлежащее
+3. Если подлежащие разные (I, She, They) → формы глаголов тоже РАЗНЫЕ
+
+❌ ПЛОХОЙ пример (ОШИБКА):
+You ___ TV. Варианты: a) watches b) plays
+Ошибка: "You" требует форму БЕЗ -s, а даны формы С -s
+
+✅ ХОРОШИЙ пример:
+You ___ TV. Варианты: a) watch b) play c) watches
+
+ТРЕБОВАНИЯ:
+- Задание на русском языке
+- Все варианты грамматически корректные
+- Только один правильный ответ по смыслу
+- Ты создаешь НОВОЕ задание, отличающееся от примера (другие предложения, другие слова)
+- НЕ присылай правильный ответ"""
                 ),
                 HumanMessageSchema(
                     content=(
-                        f"Сгенерируй упражнение по английскому языку на тему: {task_example.topic.name}"
-                        f"Тип задания: {task_example.task_type.name}"
-                        f"Пример задания: {task_example.text}"
-                        f"Задание должно отличаться от примера"
-                        f"Очень важно: не присылай ответ на это упражнение - это запрещено"
+                        f"Создай упражнение:\n\n"
+                        f"Тема: {task_example.topic.name}\n"
+                        f"Тип задания: {task_example.task_type.name}\n"
+                        f"Пример для образца структуры:\n{task_example.text}\n\n"
+                        f"ПРОВЕРЬ ПЕРЕД ОТПРАВКОЙ:\n"
+                        f"- Все подлежащие (I/You/He/She/It/We/They) имеют ПРАВИЛЬНЫЕ формы глаголов\n"
+                        f"- Если He/She/It → обязательно -s/-es на глаголе\n"
+                        f"- Если I/You/We/They → БЕЗ -s на глаголе"
                     )
                 ),
             ]
@@ -56,17 +100,58 @@ class TaskService:
         self: Self, user_id: int, answer: str, task: TaskReadSchema
     ) -> AnswerReadSchema:
         response = await self.ai_service.promt(
-            [
+            messages=[
                 SystemMessageSchema(
-                    content="Ты эксперт по проверке заданий на английском языке."
+                    content="""Ты эксперт по английской грамматике. Проверяешь ответы учеников уровня A1-A2.
+
+🔴 ГРАММАТИЧЕСКИЕ ПРАВИЛА (проверяй СТРОГО):
+
+СОГЛАСОВАНИЕ подлежащего и глагола:
+- I/You/We/They + глагол БЕЗ -s (play, have, watch)
+- He/She/It + глагол С -s/-es (plays, has, watches)
+
+ОКОНЧАНИЯ:
+- -s: plays, works, reads
+- -es: watches, goes, does, washes
+- -ies: studies (если согласная + y)
+
+ФОРМЫ TO BE:
+- I am / He is / You are / We are / They are
+
+ФОРМЫ TO HAVE:
+- I have / He has / They have
+
+АРТИКЛИ:
+- a (перед согласной): a book, a cat
+- an (перед гласной): an apple, an orange
+
+ПРЕДЛОГИ ВРЕМЕНИ:
+- in (год, месяц, время суток): in 2020, in May, in the morning
+- on (день недели, дата): on Monday, on 5th May
+- at (точное время): at 5 o'clock, at noon
+
+🔴 ФОРМАТЫ ОТВЕТА СТУДЕНТА:
+Студент может написать:
+- Букву: "a", "b", "c"
+- Букву со скобкой: "a)", "b)"
+- Последовательность: "1a 2b 3c" или "a, b, c"
+- Само слово/фразу: "plays", "is watching"
+
+🔴 ПРАВИЛА ПРОВЕРКИ:
+- Если грамматика правильная И смысл подходит → "Да"
+- Если ЛЮБАЯ ошибка (окончание, форма, артикль, предлог) → "Нет"
+- Регистр букв не важен
+
+ФОРМАТ ОТВЕТА:
+Если ответ правильный — напиши ровно одно слово 'Да'.
+Если ответ неправильный — напиши ровно одно слово 'Нет'.
+Ничего больше не добавляй."""
                 ),
                 HumanMessageSchema(
                     content=(
-                        f"Текст задания: {task.task}. "
-                        f"Ответ студента: {answer}. "
-                        "Если ответ правильный — напиши ровно одно слово 'Да'. "
-                        "Если ответ неправильный — напиши ровно одно слово 'Нет'. "
-                        "Ничего больше не добавляй."
+                        f"Задание: {task.task}\n\n"
+                        f"Ответ студента: {answer}\n\n"
+                        f"Правильный ответ?"
                     )
                 ),
             ]

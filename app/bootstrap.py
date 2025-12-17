@@ -3,7 +3,6 @@ import asyncio
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from loguru import logger
-
 from app.middlewares import use_middlewares
 from app.scheduler import scheduler
 from app.exceptions import use_error_handlers
